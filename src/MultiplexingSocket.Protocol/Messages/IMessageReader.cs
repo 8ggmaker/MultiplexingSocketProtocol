@@ -7,6 +7,6 @@ namespace MultiplexingSocket.Protocol.Messages
 {
    internal interface IMessageReader
    {
-      bool TryParseMessages(in ReadOnlySequence<byte> input, ref SequencePosition consumed, ref SequencePosition examined, out IEnumerable<Message> messages);
+      bool TryParseMessage(in ReadOnlySequence<byte> input, ref SequencePosition consumed, ref SequencePosition examined, out Message message);
    }
 }
