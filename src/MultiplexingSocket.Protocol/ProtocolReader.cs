@@ -32,17 +32,17 @@ namespace MultiplexingSocket.Protocol
          this.reader = reader;
       }
 
-      public ValueTask<ProtocolReadResult> ReadAsync(IMessageReader reader, CancellationToken cancellationToken = default)
+      public ValueTask<ProtocolReadResult<T>> ReadAsync<T>(IMessageReader<T> reader, CancellationToken cancellationToken = default)
       {
          return ReadAsync(reader, maximumMessageSize: null, cancellationToken);
       }
 
-      public ValueTask<ProtocolReadResult> ReadAsync<TReadMessage>(IMessageReader reader, int maximumMessageSize, CancellationToken cancellationToken = default)
+      public ValueTask<ProtocolReadResult<T>> ReadAsync<T>(IMessageReader<T> reader, int maximumMessageSize, CancellationToken cancellationToken = default)
       {
          return ReadAsync(reader, (int?)maximumMessageSize, cancellationToken);
       }
 
-      public ValueTask<ProtocolReadResult> ReadAsync(IMessageReader reader, int? maximumMessageSize, CancellationToken cancellationToken = default)
+      public ValueTask<ProtocolReadResult<T>> ReadAsync<T>(IMessageReader<T> reader, int? maximumMessageSize, CancellationToken cancellationToken = default)
       {
          if (disposed)
          {
@@ -64,7 +64,7 @@ namespace MultiplexingSocket.Protocol
          if (TryParseMessage(maximumMessageSize, reader, buffer, out var protocolMessage))
          {
             hasMessage = true;
-            return new ValueTask<ProtocolReadResult>(new ProtocolReadResult(protocolMessage, isCanceled, isCompleted: false));
+            return new ValueTask<ProtocolReadResult<T>>(new ProtocolReadResult<T>(protocolMessage, isCanceled, isCompleted: false));
          }
          else
          {
@@ -83,13 +83,13 @@ namespace MultiplexingSocket.Protocol
                throw new InvalidDataException("Connection terminated while reading a message.");
             }
 
-            return new ValueTask<ProtocolReadResult>(new ProtocolReadResult(default, isCanceled, isCompleted));
+            return new ValueTask<ProtocolReadResult<T>>(new ProtocolReadResult<T>(default, isCanceled, isCompleted));
          }
 
          return DoAsyncRead(maximumMessageSize, reader, cancellationToken);
       }
 
-      private ValueTask<ProtocolReadResult> DoAsyncRead(int? maximumMessageSize, IMessageReader reader, CancellationToken cancellationToken)
+      private ValueTask<ProtocolReadResult<T>> DoAsyncRead<T>(int? maximumMessageSize, IMessageReader<T> reader, CancellationToken cancellationToken)
       {
          while (true)
          {
@@ -107,7 +107,7 @@ namespace MultiplexingSocket.Protocol
             (var shouldContinue, var hasMessage) = TrySetMessage(result, maximumMessageSize, reader, out var protocolReadResult);
             if (hasMessage)
             {
-               return new ValueTask<ProtocolReadResult>(protocolReadResult);
+               return new ValueTask<ProtocolReadResult<T>>(protocolReadResult);
             }
             else if (!shouldContinue)
             {
@@ -115,10 +115,10 @@ namespace MultiplexingSocket.Protocol
             }
          }
 
-         return new ValueTask<ProtocolReadResult>(new ProtocolReadResult(default, isCanceled, isCompleted));
+         return new ValueTask<ProtocolReadResult<T>>(new ProtocolReadResult<T>(default, isCanceled, isCompleted));
       }
 
-      private async ValueTask<ProtocolReadResult> ContinueDoAsyncRead(ValueTask<ReadResult> readTask, int? maximumMessageSize, IMessageReader reader, CancellationToken cancellationToken)
+      private async ValueTask<ProtocolReadResult<T>> ContinueDoAsyncRead<T>(ValueTask<ReadResult> readTask, int? maximumMessageSize, IMessageReader<T> reader, CancellationToken cancellationToken)
       {
          while (true)
          {
@@ -137,10 +137,10 @@ namespace MultiplexingSocket.Protocol
             readTask = this.reader.ReadAsync(cancellationToken);
          }
 
-         return new ProtocolReadResult(default, isCanceled, isCompleted);
+         return new ProtocolReadResult<T>(default, isCanceled, isCompleted);
       }
 
-      private (bool ShouldContinue, bool HasMessage) TrySetMessage(ReadResult result, int? maximumMessageSize, IMessageReader reader, out ProtocolReadResult readResult)
+      private (bool ShouldContinue, bool HasMessage) TrySetMessage<T>(ReadResult result, int? maximumMessageSize, IMessageReader<T> reader, out ProtocolReadResult<T> readResult)
       {
          buffer = result.Buffer;
          isCanceled = result.IsCanceled;
@@ -154,10 +154,10 @@ namespace MultiplexingSocket.Protocol
             return (false, false);
          }
 
-         if (TryParseMessage(maximumMessageSize, reader, buffer, out var protocolMessage))
+         if (TryParseMessage<T>(maximumMessageSize, reader, buffer, out var protocolMessage))
          {
             hasMessage = true;
-            readResult = new ProtocolReadResult(protocolMessage, isCanceled, isCompleted: false);
+            readResult = new ProtocolReadResult<T>(protocolMessage, isCanceled, isCompleted: false);
             return (false, true);
          }
          else
@@ -183,7 +183,7 @@ namespace MultiplexingSocket.Protocol
          return (true, false);
       }
 
-      private bool TryParseMessage(int? maximumMessageSize, IMessageReader reader, in ReadOnlySequence<byte> buffer, out Message protocolMessage)
+      private bool TryParseMessage<T>(int? maximumMessageSize, IMessageReader<T> reader, in ReadOnlySequence<byte> buffer, out T protocolMessage)
       {
          // No message limit, just parse and dispatch
          if (maximumMessageSize == null)

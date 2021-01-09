@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
 
-namespace MultiplexingSocket.Protocol.Messages
+namespace MultiplexingSocket.Protocol.Internal
 {
    internal class Int32MessageId : I4ByteMessageId
    {

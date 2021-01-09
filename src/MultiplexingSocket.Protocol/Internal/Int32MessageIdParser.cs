@@ -4,11 +4,11 @@ using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Text;
 
-namespace MultiplexingSocket.Protocol.Messages
+namespace MultiplexingSocket.Protocol.Internal
 {
    public class Int32MessageIdParser : IMessageIdParser
    {
-      public bool TryParse(in ReadOnlySequence<byte> input, ref SequencePosition consumed, ref SequencePosition examined, out I4ByteMessageId messageId)
+      public bool TryParseMessage(in ReadOnlySequence<byte> input, ref SequencePosition consumed, ref SequencePosition examined, out I4ByteMessageId messageId)
       {
          var reader = new SequenceReader<byte>(input);
          if (reader.TryReadBigEndian(out int id))
@@ -23,11 +23,13 @@ namespace MultiplexingSocket.Protocol.Messages
          return false;
       }
 
-      public void WriteToSpan(I4ByteMessageId messageId, Span<byte> destination)
+      public void WriteMessage(I4ByteMessageId messageId, IBufferWriter<byte> output)
       {
          if(messageId is Int32MessageId int32Id)
          {
+            Span<byte> destination = output.GetSpan(4);
             BinaryPrimitives.WriteInt32BigEndian(destination, int32Id.Id);
+            output.Advance(4);
          }
 
          throw new InvalidOperationException("can not write non int32 ids");

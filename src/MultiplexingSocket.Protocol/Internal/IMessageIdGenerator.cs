@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace MultiplexingSocket.Protocol.Messages
+namespace MultiplexingSocket.Protocol.Internal
 {
-   public interface IMessageIdGenerator
+   internal interface IMessageIdGenerator
    {
       ValueTask<I4ByteMessageId> Next();
    }

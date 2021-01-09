@@ -32,7 +32,7 @@ namespace MultiplexingSocket.Protocol
          this.semaphore = semaphore;
       }
 
-      public async ValueTask WriteAsync(IMessageWriter writer, Message protocolMessage, CancellationToken cancellationToken = default)
+      public async ValueTask WriteAsync<T>(IMessageWriter<T> writer, T protocolMessage, CancellationToken cancellationToken = default)
       {
          await semaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
 
@@ -63,7 +63,7 @@ namespace MultiplexingSocket.Protocol
          }
       }
 
-      public async ValueTask WriteManyAsync(IMessageWriter writer, IEnumerable<Message> protocolMessages, CancellationToken cancellationToken = default)
+      public async ValueTask WriteManyAsync<T>(IMessageWriter<T> writer, IEnumerable<T> protocolMessages, CancellationToken cancellationToken = default)
       {
          await semaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
 
