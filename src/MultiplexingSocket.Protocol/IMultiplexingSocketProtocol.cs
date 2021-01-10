@@ -7,8 +7,8 @@ namespace MultiplexingSocket.Protocol
 {
    public interface IMultiplexingSocketProtocol<TInbound,TOutbound>
    {
-      I4ByteMessageId Write(TOutbound message);
+      ValueTask<I4ByteMessageId> Write(TOutbound message);
 
-      TInbound Read();
+      ValueTask<TInbound> Read();
    }
 }
