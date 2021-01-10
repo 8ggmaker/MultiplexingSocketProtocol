@@ -1,16 +1,14 @@
 ﻿using Microsoft.AspNetCore.Connections;
-using MultiplexingSocket.Protocol.Internal;
-using MultiplexingSocket.Protocol.Messages;
 using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace MultiplexingSocket.Protocol.Internal
 {
-   internal class MultiplexingSocketProtocol<TInbound,TOutbound>:IOQueue,IMultiplexingSocketProtocol<TInbound,TOutbound>
+   internal partial class MultiplexingSocketProtocol<TInbound, TOutbound> : IMultiplexingSocketProtocol<TInbound, TOutbound>
    {
+      private readonly ConcurrentQueue<Func<I4ByteMessageId,TOutbound,ValueTask>> workItems = new ConcurrentQueue<Work>();
+      private int doingWork;
       private readonly ConnectionContext connection;
       private readonly ProtocolReader reader;
       private readonly ProtocolWriter writer;
@@ -18,7 +16,7 @@ namespace MultiplexingSocket.Protocol.Internal
       private readonly IMessageReader<TInbound> messageReader;
       private readonly IMessageWriter<TOutbound> messageWriter;
       private readonly IMessageIdParser messageIdParser;
-      public MultiplexingSocketProtocol(ConnectionContext connection,IMessageReader<TInbound> messageReader,IMessageWriter<TOutbound> messageWriter,IMessageIdGenerator messageIdGenerator,IMessageIdParser messageIdParser)
+      public MultiplexingSocketProtocol(ConnectionContext connection, IMessageReader<TInbound> messageReader, IMessageWriter<TOutbound> messageWriter, IMessageIdGenerator messageIdGenerator, IMessageIdParser messageIdParser)
       {
          this.connection = connection ?? throw new ArgumentNullException(nameof(connection));
          this.messageReader = messageReader ?? throw new ArgumentNullException(nameof(messageReader));
@@ -33,7 +31,7 @@ namespace MultiplexingSocket.Protocol.Internal
       {
          I4ByteMessageId id;
          var idTask = this.messageIdGenerator.Next();
-         if(idTask.IsCompleted)
+         if (idTask.IsCompleted)
          {
             id = idTask.Result;
          }
@@ -41,6 +39,7 @@ namespace MultiplexingSocket.Protocol.Internal
          {
             id = await idTask;
          }
+         this.Schedule()
       }
 
       public ValueTask<TInbound> Read()
@@ -48,6 +47,11 @@ namespace MultiplexingSocket.Protocol.Internal
          throw new NotImplementedException();
       }
 
+     
+      private async ValueTask WriteInternal(I4ByteMessageId id, TOutbound message)
+      {
+         throw new NotImplementedException();
+      }
       private void WriteHeader()
       {
 
@@ -56,6 +60,6 @@ namespace MultiplexingSocket.Protocol.Internal
       private I4ByteMessageId ReadHeader()
       {
          return null;
-      }
+      }     
    }
 }

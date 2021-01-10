@@ -1,18 +1,18 @@
-﻿using MultiplexingSocket.Protocol.Messages;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Pipelines;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace MultiplexingSocket.Protocol
 {
-   internal class ProtocolWriter : IAsyncDisposable, IThreadPoolWorkItem
+   /// <summary>
+   /// not thread-safe, only one writer is allowed at the same time
+   /// </summary>
+   internal class ProtocolWriter : IAsyncDisposable
    {
       private readonly PipeWriter writer;
-      private readonly SemaphoreSlim semaphore;
       private bool disposed;
 
       public ProtocolWriter(Stream stream) :
@@ -22,103 +22,70 @@ namespace MultiplexingSocket.Protocol
       }
 
       public ProtocolWriter(PipeWriter writer)
-          : this(writer, new SemaphoreSlim(1))
       {
+         this.writer = writer;
       }
 
       public ProtocolWriter(PipeWriter writer, SemaphoreSlim semaphore)
       {
          this.writer = writer;
-         this.semaphore = semaphore;
       }
 
       public async ValueTask WriteAsync<T>(IMessageWriter<T> writer, T protocolMessage, CancellationToken cancellationToken = default)
       {
-         await semaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
-
-         try
+         if (disposed)
          {
-            if (disposed)
-            {
-               return;
-            }
-
-            writer.WriteMessage(protocolMessage, this.writer);
-
-            var result = await this.writer.FlushAsync(cancellationToken).ConfigureAwait(false);
-
-            if (result.IsCanceled)
-            {
-               throw new OperationCanceledException();
-            }
-
-            if (result.IsCompleted)
-            {
-               disposed = true;
-            }
+            return;
          }
-         finally
+
+         writer.WriteMessage(protocolMessage, this.writer);
+
+         var result = await this.writer.FlushAsync(cancellationToken).ConfigureAwait(false);
+
+         if (result.IsCanceled)
          {
-            semaphore.Release();
+            throw new OperationCanceledException();
          }
+
+         if (result.IsCompleted)
+         {
+            disposed = true;
+         }
+
       }
 
       public async ValueTask WriteManyAsync<T>(IMessageWriter<T> writer, IEnumerable<T> protocolMessages, CancellationToken cancellationToken = default)
       {
-         await semaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
 
-         try
+         if (disposed)
          {
-            if (disposed)
-            {
-               return;
-            }
-
-            foreach (var protocolMessage in protocolMessages)
-            {
-               writer.WriteMessage(protocolMessage, this.writer);
-            }
-
-            var result = await this.writer.FlushAsync(cancellationToken).ConfigureAwait(false);
-
-            if (result.IsCanceled)
-            {
-               throw new OperationCanceledException();
-            }
-
-            if (result.IsCompleted)
-            {
-               disposed = true;
-            }
+            return;
          }
-         finally
+
+         foreach (var protocolMessage in protocolMessages)
          {
-            semaphore.Release();
+            writer.WriteMessage(protocolMessage, this.writer);
          }
-      }
 
-      public async ValueTask DisposeAsync()
-      {
-         await semaphore.WaitAsync().ConfigureAwait(false);
+         var result = await this.writer.FlushAsync(cancellationToken).ConfigureAwait(false);
 
-         try
+         if (result.IsCanceled)
          {
-            if (disposed)
-            {
-               return;
-            }
+            throw new OperationCanceledException();
+         }
 
+         if (result.IsCompleted)
+         {
             disposed = true;
          }
-         finally
-         {
-            semaphore.Release();
-         }
       }
 
-      public void Execute()
+      public ValueTask DisposeAsync()
       {
-         throw new NotImplementedException();
+         disposed = true;
+
+         return default;
       }
+
    }
 }

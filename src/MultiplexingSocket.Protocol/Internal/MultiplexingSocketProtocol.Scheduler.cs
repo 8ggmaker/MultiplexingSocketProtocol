@@ -1,24 +1,22 @@
 ﻿using System;
-using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace MultiplexingSocket.Protocol.Internal
 {
-   internal class IOQueue:IThreadPoolWorkItem
+   internal partial class MultiplexingSocketProtocol<TInbound, TOutbound>: IThreadPoolWorkItem
    {
-
-      private readonly ConcurrentQueue<Work> workItems = new ConcurrentQueue<Work>();
-      private int doingWork;
-
-      public virtual void Schedule(Func<object?,ValueTask> action, object? state)
+      public void Schedule(Func<I4ByteMessageId,TOutbound,ValueTask> action, object? state)
       {
-         workItems.Enqueue(new Work(action, state));
+         workItems.Enqueue(action);
 
          // Set working if it wasn't (via atomic Interlocked).
          if (Interlocked.CompareExchange(ref doingWork, 1, 0) == 0)
          {
             // Wasn't working, schedule.
+            // have to schedule to threadpool to avoid sync path block in Func<object?,ValueTask>
             System.Threading.ThreadPool.UnsafeQueueUserWorkItem(this, preferLocal: false);
          }
       }
@@ -28,13 +26,13 @@ namespace MultiplexingSocket.Protocol.Internal
          _ = ExecuteInternal();
       }
 
-      async Task ExecuteInternal()
+      protected virtual async Task ExecuteInternal()
       {
          while (true)
          {
-            while (workItems.TryDequeue(out Work item))
+            while (workItems.TryDequeue(out Func<I4ByteMessageId,TOutbound,ValueTask> item))
             {
-               await item.Callback(item.State);
+               await item();
             }
 
             // All work done.
@@ -62,18 +60,6 @@ namespace MultiplexingSocket.Protocol.Internal
             }
 
             // Is work, wasn't already scheduled so continue loop.
-         }
-      }
-
-      private readonly struct Work
-      {
-         public readonly Func<object?,ValueTask>Callback;
-         public readonly object? State;
-
-         public Work(Func<object?,ValueTask> callback, object? state)
-         {
-            Callback = callback;
-            State = state;
          }
       }
    }
