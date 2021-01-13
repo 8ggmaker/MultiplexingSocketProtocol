@@ -54,15 +54,6 @@ namespace MultiplexingSocket.Protocol.Internal
       private async ValueTask WriteInternal(WrappedMessage<TOutbound> message,PooledValueTaskSource<I4ByteMessageId> source)
       {
          throw new NotImplementedException();
-      }
-      private void WriteHeader()
-      {
-
-      }
-
-      private I4ByteMessageId ReadHeader()
-      {
-         return null;
-      }     
+      }  
    }
 }

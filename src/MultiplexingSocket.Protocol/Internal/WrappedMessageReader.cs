@@ -20,7 +20,8 @@ namespace MultiplexingSocket.Protocol.Internal
          T payload;
          if(this.idParser.TryParseMessage(input,ref consumed,ref examined,out id))
          {
-            if(this.reader.TryParseMessage(input,ref consumed, ref examined,out payload))
+            ReadOnlySequence<byte> nextInput = input.Slice(consumed);
+            if(this.reader.TryParseMessage(nextInput, ref consumed, ref examined,out payload))
             {
                message = new WrappedMessage<T>(id, payload);
                return true;
