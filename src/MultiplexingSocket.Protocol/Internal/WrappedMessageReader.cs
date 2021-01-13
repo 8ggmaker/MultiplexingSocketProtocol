@@ -20,11 +20,15 @@ namespace MultiplexingSocket.Protocol.Internal
          T payload;
          if(this.idParser.TryParseMessage(input,ref consumed,ref examined,out id))
          {
-            ReadOnlySequence<byte> nextInput = input.Slice(consumed);
-            if(this.reader.TryParseMessage(nextInput, ref consumed, ref examined,out payload))
+            if (!input.End.Equals(consumed)) // has more data
             {
-               message = new WrappedMessage<T>(id, payload);
-               return true;
+               var nextPosition = input.GetPosition(1, consumed);
+               ReadOnlySequence<byte> nextInput = input.Slice(nextPosition);
+               if (this.reader.TryParseMessage(nextInput, ref consumed, ref examined, out payload))
+               {
+                  message = new WrappedMessage<T>(id, payload);
+                  return true;
+               }
             }
          }
          message = default;
