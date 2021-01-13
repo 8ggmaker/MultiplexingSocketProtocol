@@ -44,16 +44,26 @@ namespace MultiplexingSocket.Protocol.Internal
          this.Schedule(this.WriteInternal, new WrappedMessage<TOutbound>(id, message), source);
          return await task;
       }
-
-      public ValueTask<TInbound> Read()
+      
+      public async ValueTask<Tuple<I4ByteMessageId,TInbound>> Read()
       {
-         throw new NotImplementedException();
+         var res = await this.reader.ReadAsync<WrappedMessage<TInbound>>(this.wrappedReader);
+         if(res.IsCompleted)
+         {
+            // todo
+         }
+         if(res.IsCanceled)
+         {
+            // todo
+         }
+         return new Tuple<I4ByteMessageId, TInbound>(res.Message.Id, res.Message.Payload);
       }
 
      
       private async ValueTask WriteInternal(WrappedMessage<TOutbound> message,PooledValueTaskSource<I4ByteMessageId> source)
       {
-         throw new NotImplementedException();
+         await this.writer.WriteAsync<WrappedMessage<TOutbound>>(this.wrappedWriter, message);
+         source.Complete();
       }  
    }
 }

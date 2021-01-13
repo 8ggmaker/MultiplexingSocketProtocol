@@ -9,6 +9,6 @@ namespace MultiplexingSocket.Protocol
    {
       ValueTask<I4ByteMessageId> Write(TOutbound message);
 
-      ValueTask<TInbound> Read();
+      ValueTask<Tuple<I4ByteMessageId,TInbound>> Read();
    }
 }
