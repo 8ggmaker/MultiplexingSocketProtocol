@@ -7,24 +7,24 @@ namespace MultiplexingSocket.Protocol.Internal
 {
    internal partial class MultiplexingSocketProtocol<TInbound, TOutbound> : IMultiplexingSocketProtocol<TInbound, TOutbound>
    {
-      private readonly ConcurrentQueue<Func<I4ByteMessageId,TOutbound,ValueTask>> workItems = new ConcurrentQueue<Work>();
+      private readonly ConcurrentQueue<Work<TOutbound>> workItems = new ConcurrentQueue<Work<TOutbound>>();
       private int doingWork;
       private readonly ConnectionContext connection;
       private readonly ProtocolReader reader;
       private readonly ProtocolWriter writer;
       private readonly IMessageIdGenerator messageIdGenerator;
-      private readonly IMessageReader<TInbound> messageReader;
-      private readonly IMessageWriter<TOutbound> messageWriter;
-      private readonly IMessageIdParser messageIdParser;
+      private readonly WrappedMessageReader<TInbound> wrappedReader;
+      private readonly WrappedMessageWriter<TOutbound> wrappedWriter;
+      private readonly IObjectPool<PooledValueTaskSource<I4ByteMessageId>> sourcePool;
+
       public MultiplexingSocketProtocol(ConnectionContext connection, IMessageReader<TInbound> messageReader, IMessageWriter<TOutbound> messageWriter, IMessageIdGenerator messageIdGenerator, IMessageIdParser messageIdParser)
       {
          this.connection = connection ?? throw new ArgumentNullException(nameof(connection));
-         this.messageReader = messageReader ?? throw new ArgumentNullException(nameof(messageReader));
-         this.messageWriter = messageWriter ?? throw new ArgumentNullException(nameof(messageWriter));
          this.messageIdGenerator = messageIdGenerator ?? throw new ArgumentNullException(nameof(messageIdGenerator));
          this.reader = new ProtocolReader(this.connection.Transport.Input);
          this.writer = new ProtocolWriter(this.connection.Transport.Output);
-         this.messageIdParser = messageIdParser ?? throw new ArgumentNullException(nameof(messageIdParser));
+         this.wrappedReader = new WrappedMessageReader<TInbound>(messageIdParser, messageReader);
+         this.wrappedWriter = new WrappedMessageWriter<TOutbound>(messageIdParser, messageWriter);
       }
 
       public async ValueTask<I4ByteMessageId> Write(TOutbound message)
@@ -39,7 +39,10 @@ namespace MultiplexingSocket.Protocol.Internal
          {
             id = await idTask;
          }
-         this.Schedule()
+         var source = this.sourcePool.Rent();
+         ValueTask<I4ByteMessageId> task = new ValueTask<I4ByteMessageId>(source, source.Version);
+         this.Schedule(this.WriteInternal, new WrappedMessage<TOutbound>(id, message), source);
+         return await task;
       }
 
       public ValueTask<TInbound> Read()
@@ -48,7 +51,7 @@ namespace MultiplexingSocket.Protocol.Internal
       }
 
      
-      private async ValueTask WriteInternal(I4ByteMessageId id, TOutbound message)
+      private async ValueTask WriteInternal(WrappedMessage<TOutbound> message,PooledValueTaskSource<I4ByteMessageId> source)
       {
          throw new NotImplementedException();
       }

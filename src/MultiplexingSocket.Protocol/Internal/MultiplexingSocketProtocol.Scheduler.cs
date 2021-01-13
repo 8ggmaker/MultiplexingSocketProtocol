@@ -8,9 +8,9 @@ namespace MultiplexingSocket.Protocol.Internal
 {
    internal partial class MultiplexingSocketProtocol<TInbound, TOutbound>: IThreadPoolWorkItem
    {
-      public void Schedule(Func<I4ByteMessageId,TOutbound,ValueTask> action, object? state)
+      public void Schedule(Func<WrappedMessage<TOutbound>,PooledValueTaskSource<I4ByteMessageId>, ValueTask> action, WrappedMessage<TOutbound> message,PooledValueTaskSource<I4ByteMessageId> source)
       {
-         workItems.Enqueue(action);
+         workItems.Enqueue(new Work<TOutbound>(message,action,source));
 
          // Set working if it wasn't (via atomic Interlocked).
          if (Interlocked.CompareExchange(ref doingWork, 1, 0) == 0)
@@ -30,9 +30,9 @@ namespace MultiplexingSocket.Protocol.Internal
       {
          while (true)
          {
-            while (workItems.TryDequeue(out Func<I4ByteMessageId,TOutbound,ValueTask> item))
+            while (workItems.TryDequeue(out Work<TOutbound> item))
             {
-               await item();
+               await item.Action(item.Message,item.source);
             }
 
             // All work done.
@@ -60,6 +60,19 @@ namespace MultiplexingSocket.Protocol.Internal
             }
 
             // Is work, wasn't already scheduled so continue loop.
+         }
+      }
+
+      private struct Work<T>
+      {
+         public WrappedMessage<T> Message { get; set; }
+         public Func<WrappedMessage<T>, PooledValueTaskSource<I4ByteMessageId>,ValueTask> Action;
+         public PooledValueTaskSource<I4ByteMessageId> source;
+         public Work(WrappedMessage<T> message,Func<WrappedMessage<T>,PooledValueTaskSource<I4ByteMessageId>,ValueTask> action,PooledValueTaskSource<I4ByteMessageId> source)
+         {
+            this.Message = message;
+            this.Action = action;
+            this.source = source;
          }
       }
    }

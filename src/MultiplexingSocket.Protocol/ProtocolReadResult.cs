@@ -1,9 +1,4 @@
-﻿using MultiplexingSocket.Protocol.Messages;
-using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace MultiplexingSocket.Protocol
+﻿namespace MultiplexingSocket.Protocol
 {
    internal readonly struct ProtocolReadResult<T>
    {
