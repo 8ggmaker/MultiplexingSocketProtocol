@@ -16,7 +16,15 @@ namespace MultiplexingSocket.Protocol.Internal
 
       public bool Equals([AllowNull] I4ByteMessageId other)
       {
-         return this.Id.Equals(other);
+         if(other==null)
+         {
+            return false;
+         }
+         if(other is Int32MessageId otherId)
+         {
+            return Id == otherId.Id;
+         }
+         return false;
       }
 
       public string ToString(string format, IFormatProvider formatProvider)

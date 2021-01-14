@@ -22,8 +22,7 @@ namespace MultiplexingSocket.Protocol.Internal
          {
             if (!input.End.Equals(consumed)) // has more data
             {
-               var nextPosition = input.GetPosition(1, consumed);
-               ReadOnlySequence<byte> nextInput = input.Slice(nextPosition);
+               ReadOnlySequence<byte> nextInput = input.Slice(consumed);
                if (this.reader.TryParseMessage(nextInput, ref consumed, ref examined, out payload))
                {
                   message = new WrappedMessage<T>(id, payload);

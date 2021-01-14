@@ -14,6 +14,7 @@ namespace Shared.AddTwoInteger
          int size = sizeof(int);
          var memory = output.GetSpan(size);
          BinaryPrimitives.WriteInt32BigEndian(memory, message);
+         output.Advance(size);
       }
    }
 }

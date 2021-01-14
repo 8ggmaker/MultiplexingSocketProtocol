@@ -32,7 +32,7 @@ namespace Client
                B = i+1
             });
             var resp = await protocol.Read();
-            if(resp.Item1 != id)
+            if(!resp.Item1.Equals(id))
             {
                Console.WriteLine($"error, id not matched, reqId:{id},respId:{resp.Item1}");
             }

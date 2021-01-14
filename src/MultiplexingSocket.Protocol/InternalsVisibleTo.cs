@@ -2,3 +2,4 @@
 
 [assembly: InternalsVisibleTo("Client")]
 [assembly: InternalsVisibleTo("Server")]
+[assembly: InternalsVisibleTo("MultiplexingSocket.Test")]
