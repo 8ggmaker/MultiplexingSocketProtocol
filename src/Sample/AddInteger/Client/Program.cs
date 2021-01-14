@@ -23,14 +23,16 @@ namespace Client
       {
          await using var connection = await connectionFactory.ConnectAsync(new IPEndPoint(IPAddress.Loopback, 5005));
          MultiplexingSocketProtocol<int, AddIntegerRequest> protocol = new MultiplexingSocketProtocol<int,AddIntegerRequest>(connection, new AddIntegerResponseReader(), new AddIntegerRequestWritter(), new Int32MessageIdGenerator(), new Int32MessageIdParser());
+         IMessageIdGenerator idGenerator = new Int32MessageIdGenerator();
          int cnt = 20;
          for(int i =0;i<cnt;i++)
          {
-            var id = await protocol.Write(new AddIntegerRequest 
+            var id = await idGenerator.Next();
+            await protocol.Write(new AddIntegerRequest 
             { 
                A = i,
                B = i+1
-            });
+            },id);
             var resp = await protocol.Read();
             if(!resp.Item1.Equals(id))
             {

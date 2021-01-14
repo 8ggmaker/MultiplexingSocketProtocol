@@ -12,7 +12,6 @@ namespace MultiplexingSocket.Protocol.Internal
       private readonly ConnectionContext connection;
       private readonly ProtocolReader reader;
       private readonly ProtocolWriter writer;
-      private readonly IMessageIdGenerator messageIdGenerator;
       private readonly WrappedMessageReader<TInbound> wrappedReader;
       private readonly WrappedMessageWriter<TOutbound> wrappedWriter;
       private readonly IObjectPool<PooledValueTaskSource<I4ByteMessageId>> sourcePool;
@@ -20,7 +19,6 @@ namespace MultiplexingSocket.Protocol.Internal
       public MultiplexingSocketProtocol(ConnectionContext connection, IMessageReader<TInbound> messageReader, IMessageWriter<TOutbound> messageWriter, IMessageIdGenerator messageIdGenerator, IMessageIdParser messageIdParser)
       {
          this.connection = connection ?? throw new ArgumentNullException(nameof(connection));
-         this.messageIdGenerator = messageIdGenerator ?? throw new ArgumentNullException(nameof(messageIdGenerator));
          this.reader = new ProtocolReader(this.connection.Transport.Input);
          this.writer = new ProtocolWriter(this.connection.Transport.Output);
          this.wrappedReader = new WrappedMessageReader<TInbound>(messageIdParser, messageReader);
@@ -28,25 +26,11 @@ namespace MultiplexingSocket.Protocol.Internal
          this.sourcePool = new ObjectPool<PooledValueTaskSource<I4ByteMessageId>>(() => { return new PooledValueTaskSource<I4ByteMessageId>(); }, 100);
       }
 
-      public async ValueTask<I4ByteMessageId> Write(TOutbound message,I4ByteMessageId id = null)
+      public ValueTask<I4ByteMessageId> Write(TOutbound message,I4ByteMessageId id)
       {
-         // for test first
-         //I4ByteMessageId id;
-         if (id == null)
-         {
-            var idTask = this.messageIdGenerator.Next();
-            if (idTask.IsCompleted)
-            {
-               id = idTask.Result;
-            }
-            else
-            {
-               id = await idTask;
-            }
-         }
          var source = this.sourcePool.Rent();
          this.Schedule(this.WriteInternal, new WrappedMessage<TOutbound>(id, message), source);
-         return await source.Task;
+         return source.Task;
       }
       
       public async ValueTask<Tuple<I4ByteMessageId,TInbound>> Read()
