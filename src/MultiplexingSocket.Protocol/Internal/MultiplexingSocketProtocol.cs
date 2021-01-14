@@ -25,24 +25,28 @@ namespace MultiplexingSocket.Protocol.Internal
          this.writer = new ProtocolWriter(this.connection.Transport.Output);
          this.wrappedReader = new WrappedMessageReader<TInbound>(messageIdParser, messageReader);
          this.wrappedWriter = new WrappedMessageWriter<TOutbound>(messageIdParser, messageWriter);
+         this.sourcePool = new ObjectPool<PooledValueTaskSource<I4ByteMessageId>>(() => { return new PooledValueTaskSource<I4ByteMessageId>(); }, 100);
       }
 
-      public async ValueTask<I4ByteMessageId> Write(TOutbound message)
+      public async ValueTask<I4ByteMessageId> Write(TOutbound message,I4ByteMessageId id = null)
       {
-         I4ByteMessageId id;
-         var idTask = this.messageIdGenerator.Next();
-         if (idTask.IsCompleted)
+         // for test first
+         //I4ByteMessageId id;
+         if (id == null)
          {
-            id = idTask.Result;
-         }
-         else
-         {
-            id = await idTask;
+            var idTask = this.messageIdGenerator.Next();
+            if (idTask.IsCompleted)
+            {
+               id = idTask.Result;
+            }
+            else
+            {
+               id = await idTask;
+            }
          }
          var source = this.sourcePool.Rent();
-         ValueTask<I4ByteMessageId> task = new ValueTask<I4ByteMessageId>(source, source.Version);
          this.Schedule(this.WriteInternal, new WrappedMessage<TOutbound>(id, message), source);
-         return await task;
+         return await source.Task;
       }
       
       public async ValueTask<Tuple<I4ByteMessageId,TInbound>> Read()
@@ -52,9 +56,13 @@ namespace MultiplexingSocket.Protocol.Internal
          {
             // todo
          }
-         if(res.IsCanceled)
+         else if(res.IsCanceled)
          {
             // todo
+         }
+         else
+         {
+            reader.Advance();
          }
          return new Tuple<I4ByteMessageId, TInbound>(res.Message.Id, res.Message.Payload);
       }
@@ -62,8 +70,15 @@ namespace MultiplexingSocket.Protocol.Internal
      
       private async ValueTask WriteInternal(WrappedMessage<TOutbound> message,PooledValueTaskSource<I4ByteMessageId> source)
       {
-         await this.writer.WriteAsync<WrappedMessage<TOutbound>>(this.wrappedWriter, message);
-         source.Complete();
+         try
+         {
+            await this.writer.WriteAsync<WrappedMessage<TOutbound>>(this.wrappedWriter, message);
+            source.SetResult(message.Id);
+         }
+         catch(Exception ex)
+         {
+            source.SetException(ex);
+         }
       }  
    }
 }

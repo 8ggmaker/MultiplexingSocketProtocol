@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Threading.Tasks;
 using System.Threading.Tasks.Sources;
 
 namespace MultiplexingSocket.Protocol.Internal
@@ -10,7 +11,16 @@ namespace MultiplexingSocket.Protocol.Internal
       private ManualResetValueTaskSourceCore<T> innerSource;
       private IObjectPool<PooledValueTaskSource<T>> pool;
 
-      public short Version => this.innerSource.Version;
+      public PooledValueTaskSource()
+      {
+         this.innerSource = new ManualResetValueTaskSourceCore<T>
+         {
+            RunContinuationsAsynchronously = true
+         };
+      }
+
+      public ValueTask<T> Task => new ValueTask<T>(this, this.innerSource.Version);
+
       public ValueTaskSourceStatus GetStatus(short token)
       {
          return this.innerSource.GetStatus(token);
@@ -26,9 +36,23 @@ namespace MultiplexingSocket.Protocol.Internal
          return this.innerSource.GetResult(token);
       }
 
-      public void Complete()
+      public void SetResult(T result)
       {
+         this.innerSource.SetResult(result);
+      }
 
+      public void SetException(Exception ex)
+      {
+         this.innerSource.SetException(ex);
+      }
+
+      public void SetPool(IObjectPool<PooledValueTaskSource<T>> pool)
+      {
+         this.pool = pool;
+      }
+      public void Release()
+      {
+         this.pool?.Return(this);
       }
    }
 }

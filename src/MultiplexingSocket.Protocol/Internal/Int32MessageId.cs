@@ -18,5 +18,10 @@ namespace MultiplexingSocket.Protocol.Internal
       {
          return this.Id.Equals(other);
       }
+
+      public string ToString(string format, IFormatProvider formatProvider)
+      {
+         return Id.ToString();
+      }
    }
 }

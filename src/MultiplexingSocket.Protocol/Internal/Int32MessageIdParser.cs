@@ -30,6 +30,7 @@ namespace MultiplexingSocket.Protocol.Internal
             Span<byte> destination = output.GetSpan(4);
             BinaryPrimitives.WriteInt32BigEndian(destination, int32Id.Id);
             output.Advance(4);
+            return;
          }
 
          throw new InvalidOperationException("can not write non int32 ids");

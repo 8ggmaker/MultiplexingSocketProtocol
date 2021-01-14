@@ -4,7 +4,7 @@ using System.Text;
 
 namespace MultiplexingSocket.Protocol
 {
-   public interface IObjectPool<T>
+   public interface IObjectPool<T> where T:class
    {
       T Rent();
 

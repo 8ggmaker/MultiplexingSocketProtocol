@@ -4,7 +4,7 @@ using System.Text;
 
 namespace MultiplexingSocket.Protocol
 {
-   public interface I4ByteMessageId: IEquatable<I4ByteMessageId>
+   public interface I4ByteMessageId: IEquatable<I4ByteMessageId>,IFormattable
    {
    }
 }

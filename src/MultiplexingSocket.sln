@@ -5,7 +5,15 @@ VisualStudioVersion = 16.0.30804.86
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MultiplexingSocket.Protocol", "MultiplexingSocket.Protocol\MultiplexingSocket.Protocol.csproj", "{33FBDBCE-A767-4B8E-B200-E425EF4920B2}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MultiplexingSocket.Test", "MultiplexingSocket.Test\MultiplexingSocket.Test.csproj", "{4F7D915A-483A-49AE-90F7-C5C628C4CCDB}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MultiplexingSocket.Test", "MultiplexingSocket.Test\MultiplexingSocket.Test.csproj", "{4F7D915A-483A-49AE-90F7-C5C628C4CCDB}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Sample", "Sample", "{45B9B6E7-9414-4FEA-B397-5B45A63F8EAC}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Client", "Sample\Client\Client.csproj", "{294EC0CF-375B-48FF-8AD7-A6B6C7E58D2B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Shared", "Sample\Shared\Shared.csproj", "{83AB66AC-9B35-4E8A-AF93-A7A53362693C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Server", "Sample\Server\Server.csproj", "{0B692F08-E718-4E97-BBF0-DEFF4F70924E}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -21,9 +29,26 @@ Global
 		{4F7D915A-483A-49AE-90F7-C5C628C4CCDB}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{4F7D915A-483A-49AE-90F7-C5C628C4CCDB}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{4F7D915A-483A-49AE-90F7-C5C628C4CCDB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{294EC0CF-375B-48FF-8AD7-A6B6C7E58D2B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{294EC0CF-375B-48FF-8AD7-A6B6C7E58D2B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{294EC0CF-375B-48FF-8AD7-A6B6C7E58D2B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{294EC0CF-375B-48FF-8AD7-A6B6C7E58D2B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{83AB66AC-9B35-4E8A-AF93-A7A53362693C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{83AB66AC-9B35-4E8A-AF93-A7A53362693C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{83AB66AC-9B35-4E8A-AF93-A7A53362693C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{83AB66AC-9B35-4E8A-AF93-A7A53362693C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0B692F08-E718-4E97-BBF0-DEFF4F70924E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0B692F08-E718-4E97-BBF0-DEFF4F70924E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0B692F08-E718-4E97-BBF0-DEFF4F70924E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0B692F08-E718-4E97-BBF0-DEFF4F70924E}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{294EC0CF-375B-48FF-8AD7-A6B6C7E58D2B} = {45B9B6E7-9414-4FEA-B397-5B45A63F8EAC}
+		{83AB66AC-9B35-4E8A-AF93-A7A53362693C} = {45B9B6E7-9414-4FEA-B397-5B45A63F8EAC}
+		{0B692F08-E718-4E97-BBF0-DEFF4F70924E} = {45B9B6E7-9414-4FEA-B397-5B45A63F8EAC}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {51573A39-CF46-4DDC-9CB4-948B1B0D18EF}
