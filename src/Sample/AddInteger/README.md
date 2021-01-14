@@ -1,5 +1,5 @@
 ## A sample of MultiplexingSocketProtocol
 
-Client send two integers, server returned the Sum
+Client send two integers, server returns the Sum
 
 ![result](result/addIntegerResult.png)
