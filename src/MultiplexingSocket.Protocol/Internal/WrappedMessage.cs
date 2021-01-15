@@ -7,11 +7,11 @@ namespace MultiplexingSocket.Protocol.Internal
 {
    internal struct WrappedMessage<T>
    {
-      public I4ByteMessageId Id { get; private set; }
+      public MessageId Id { get; private set; }
 
       public T Payload { get; private set; }
 
-      public WrappedMessage (I4ByteMessageId id, T payload)
+      public WrappedMessage (MessageId id, T payload)
       {
          this.Id = id;
          this.Payload = payload;

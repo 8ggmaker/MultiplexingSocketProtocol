@@ -7,6 +7,6 @@ namespace MultiplexingSocket.Protocol.Internal
 {
    internal interface IMessageIdGenerator
    {
-      ValueTask<I4ByteMessageId> Next();
+      ValueTask<MessageId> Next();
    }
 }

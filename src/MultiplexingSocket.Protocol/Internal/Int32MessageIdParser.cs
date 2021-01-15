@@ -8,7 +8,7 @@ namespace MultiplexingSocket.Protocol.Internal
 {
    public class Int32MessageIdParser : IMessageIdParser
    {
-      public bool TryParseMessage(in ReadOnlySequence<byte> input, ref SequencePosition consumed, ref SequencePosition examined, out I4ByteMessageId messageId)
+      public bool TryParseMessage(in ReadOnlySequence<byte> input, ref SequencePosition consumed, ref SequencePosition examined, out MessageId messageId)
       {
          var reader = new SequenceReader<byte>(input);
          if (reader.TryReadBigEndian(out int id))
@@ -23,7 +23,7 @@ namespace MultiplexingSocket.Protocol.Internal
          return false;
       }
 
-      public void WriteMessage(I4ByteMessageId messageId, IBufferWriter<byte> output)
+      public void WriteMessage(MessageId messageId, IBufferWriter<byte> output)
       {
          if(messageId is Int32MessageId int32Id)
          {

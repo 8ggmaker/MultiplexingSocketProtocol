@@ -43,7 +43,7 @@ namespace AsyncServer
          }
       }
 
-      static async Task PerformAddInteger(I4ByteMessageId id,int a,int b, IMultiplexingSocketProtocol<AddIntegerRequest, int> protocol)
+      static async Task PerformAddInteger(MessageId id,int a,int b, IMultiplexingSocketProtocol<AddIntegerRequest, int> protocol)
       {
          var sum = a + b;
          await protocol.Write(sum, id);

@@ -25,7 +25,7 @@ namespace AsyncClient
          MultiplexingSocketProtocol<int, AddIntegerRequest> protocol = new MultiplexingSocketProtocol<int, AddIntegerRequest>(connection, new AddIntegerResponseReader(), new AddIntegerRequestWritter(), new Int32MessageIdGenerator(), new Int32MessageIdParser());
          IMessageIdGenerator idGenerator = new Int32MessageIdGenerator();
          IMultiplexingSocketClientProtocol<int, AddIntegerRequest> clientProtocol = new MultiplexingSocketClientProtocol<int, AddIntegerRequest>(protocol, idGenerator);
-         int cnt = 10;
+         int cnt = 20;
          Task[] tasks = new Task[cnt];
          for (int i = 0; i < cnt; i++)
          {

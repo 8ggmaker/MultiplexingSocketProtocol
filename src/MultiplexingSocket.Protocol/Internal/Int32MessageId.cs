@@ -1,11 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
-using System.Text;
+﻿using System.Diagnostics.CodeAnalysis;
 
 namespace MultiplexingSocket.Protocol.Internal
 {
-   internal class Int32MessageId : I4ByteMessageId
+   internal class Int32MessageId : MessageId
    {
       public int Id { get; private set; }
 
@@ -14,22 +11,29 @@ namespace MultiplexingSocket.Protocol.Internal
          this.Id = id;
       }
 
-      public bool Equals([AllowNull] I4ByteMessageId other)
+      public override int GetHashCode()
       {
-         if(other==null)
+         return this.Id.GetHashCode();
+      }
+
+      public override bool Equals(object obj)
+      {
+         if (obj == null)
          {
             return false;
          }
-         if(other is Int32MessageId otherId)
-         {
-            return Id == otherId.Id;
-         }
-         return false;
-      }
 
-      public string ToString(string format, IFormatProvider formatProvider)
-      {
-         return Id.ToString();
+         if (ReferenceEquals(this, obj))
+         {
+            return true;
+         }
+
+         if(obj is Int32MessageId otherId)
+         {
+            return this.Id.Equals(otherId.Id);
+         }
+
+         return false;
       }
    }
 }

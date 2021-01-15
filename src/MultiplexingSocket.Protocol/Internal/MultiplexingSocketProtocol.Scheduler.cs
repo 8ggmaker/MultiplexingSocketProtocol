@@ -8,7 +8,7 @@ namespace MultiplexingSocket.Protocol.Internal
 {
    internal partial class MultiplexingSocketProtocol<TInbound, TOutbound>: IThreadPoolWorkItem
    {
-      public void Schedule(Func<WrappedMessage<TOutbound>,PooledValueTaskSource<I4ByteMessageId>, ValueTask> action, WrappedMessage<TOutbound> message,PooledValueTaskSource<I4ByteMessageId> source)
+      public void Schedule(Func<WrappedMessage<TOutbound>,PooledValueTaskSource<MessageId>, ValueTask> action, WrappedMessage<TOutbound> message,PooledValueTaskSource<MessageId> source)
       {
          workItems.Enqueue(new Work<TOutbound>(message,action,source));
 
@@ -66,9 +66,9 @@ namespace MultiplexingSocket.Protocol.Internal
       private struct Work<T>
       {
          public WrappedMessage<T> Message { get; set; }
-         public Func<WrappedMessage<T>, PooledValueTaskSource<I4ByteMessageId>,ValueTask> Action;
-         public PooledValueTaskSource<I4ByteMessageId> source;
-         public Work(WrappedMessage<T> message,Func<WrappedMessage<T>,PooledValueTaskSource<I4ByteMessageId>,ValueTask> action,PooledValueTaskSource<I4ByteMessageId> source)
+         public Func<WrappedMessage<T>, PooledValueTaskSource<MessageId>,ValueTask> Action;
+         public PooledValueTaskSource<MessageId> source;
+         public Work(WrappedMessage<T> message,Func<WrappedMessage<T>,PooledValueTaskSource<MessageId>,ValueTask> action,PooledValueTaskSource<MessageId> source)
          {
             this.Message = message;
             this.Action = action;

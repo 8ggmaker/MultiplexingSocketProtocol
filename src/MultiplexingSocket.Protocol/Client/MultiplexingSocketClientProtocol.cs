@@ -9,7 +9,7 @@ namespace MultiplexingSocket.Protocol.Client
 {
    internal class MultiplexingSocketClientProtocol<TInbound, TOutbound> : IMultiplexingSocketClientProtocol<TInbound, TOutbound>
    {
-      private ConcurrentDictionary<I4ByteMessageId, PendingResponse<TInbound>> pendings;
+      private ConcurrentDictionary<MessageId, PendingResponse<TInbound>> pendings;
       private IObjectPool<PooledValueTaskSource<TInbound>> sourcePool;
       private IMultiplexingSocketProtocol<TInbound, TOutbound> innerProtocol;
       private IMessageIdGenerator idGenerator;
@@ -17,12 +17,13 @@ namespace MultiplexingSocket.Protocol.Client
       {
          this.innerProtocol = innerProtocol ?? throw new ArgumentNullException(nameof(innerProtocol));
          this.idGenerator = idGenerator ?? throw new ArgumentNullException(nameof(idGenerator));
-         this.pendings = new ConcurrentDictionary<I4ByteMessageId, PendingResponse<TInbound>>();
+         this.pendings = new ConcurrentDictionary<MessageId, PendingResponse<TInbound>>();
          this.sourcePool = new ObjectPool<PooledValueTaskSource<TInbound>>(() => {return new PooledValueTaskSource<TInbound>(); }, 100);
+         this.ScheduleRead();
       }
       public async ValueTask<TInbound> SendAsync(TOutbound data)
       {
-         I4ByteMessageId id = await idGenerator.Next();
+         MessageId id = await idGenerator.Next();
          var source = this.sourcePool.Rent();
          try
          {
@@ -31,7 +32,6 @@ namespace MultiplexingSocket.Protocol.Client
             {
                Source = source
             });
-            this.ScheduleRead();
          }
          catch (Exception ex)
          {
@@ -55,7 +55,7 @@ namespace MultiplexingSocket.Protocol.Client
          while(true)
          {
             var next = await this.innerProtocol.Read();
-            I4ByteMessageId id = next.Item1;
+            MessageId id = next.Item1;
             var data = next.Item2;
             if(this.pendings.ContainsKey(id))
             {

@@ -16,7 +16,7 @@ namespace MultiplexingSocket.Protocol.Internal
 
       public bool TryParseMessage(in ReadOnlySequence<byte> input, ref SequencePosition consumed, ref SequencePosition examined, out WrappedMessage<T> message)
       {
-         I4ByteMessageId id;
+         MessageId id;
          T payload;
          if(this.idParser.TryParseMessage(input,ref consumed,ref examined,out id))
          {

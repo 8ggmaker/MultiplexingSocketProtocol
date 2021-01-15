@@ -5,7 +5,7 @@ using System.Text;
 
 namespace MultiplexingSocket.Protocol.Internal
 {
-   internal interface IMessageIdParser: IMessageReader<I4ByteMessageId>,IMessageWriter<I4ByteMessageId>
+   internal interface IMessageIdParser: IMessageReader<MessageId>,IMessageWriter<MessageId>
    {
      
    }

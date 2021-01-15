@@ -9,10 +9,10 @@ namespace MultiplexingSocket.Protocol.Internal
    internal class Int32MessageIdGenerator : IMessageIdGenerator
    {
       private int next = -1;
-      public ValueTask<I4ByteMessageId> Next()
+      public ValueTask<MessageId> Next()
       {
          int res = Interlocked.Increment(ref this.next);
-         return new ValueTask<I4ByteMessageId>(new Int32MessageId(res));
+         return new ValueTask<MessageId>(new Int32MessageId(res));
       }
    }
 }
