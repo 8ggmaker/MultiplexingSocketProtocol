@@ -13,25 +13,25 @@ namespace MultiplexingSocket.Protocol.Transport
 {
     internal class SocketAwaitableEventArgs : SocketAsyncEventArgs, ICriticalNotifyCompletion
     {
-        private static readonly Action _callbackCompleted = () => { };
+        private static readonly Action callbackCompleted = () => { };
 
-        private readonly PipeScheduler _ioScheduler;
+        private readonly PipeScheduler ioScheduler;
 
-        private Action _callback;
+        private Action callback;
 
         public SocketAwaitableEventArgs(PipeScheduler ioScheduler)
         {
-            _ioScheduler = ioScheduler;
+            this.ioScheduler = ioScheduler;
         }
 
         public SocketAwaitableEventArgs GetAwaiter() => this;
-        public bool IsCompleted => ReferenceEquals(_callback, _callbackCompleted);
+        public bool IsCompleted => ReferenceEquals(this.callback, callbackCompleted);
 
         public int GetResult()
         {
-            Debug.Assert(ReferenceEquals(_callback, _callbackCompleted));
+            Debug.Assert(ReferenceEquals(this.callback, callbackCompleted));
 
-            _callback = null;
+            this.callback = null;
 
             if (SocketError != SocketError.Success)
             {
@@ -48,8 +48,8 @@ namespace MultiplexingSocket.Protocol.Transport
 
         public void OnCompleted(Action continuation)
         {
-            if (ReferenceEquals(_callback, _callbackCompleted) ||
-                ReferenceEquals(Interlocked.CompareExchange(ref _callback, continuation, null), _callbackCompleted))
+            if (ReferenceEquals(this.callback, callbackCompleted) ||
+                ReferenceEquals(Interlocked.CompareExchange(ref this.callback, continuation, null), callbackCompleted))
             {
                 Task.Run(continuation);
             }
@@ -67,11 +67,11 @@ namespace MultiplexingSocket.Protocol.Transport
 
         protected override void OnCompleted(SocketAsyncEventArgs _)
         {
-            var continuation = Interlocked.Exchange(ref _callback, _callbackCompleted);
+            var continuation = Interlocked.Exchange(ref this.callback, callbackCompleted);
 
             if (continuation != null)
             {
-                _ioScheduler.Schedule(state => ((Action)state)(), continuation);
+                this.ioScheduler.Schedule(state => ((Action)state)(), continuation);
             }
         }
     }

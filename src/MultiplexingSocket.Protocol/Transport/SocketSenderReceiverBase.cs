@@ -9,15 +9,15 @@ namespace MultiplexingSocket.Protocol.Transport
 {
     internal abstract class SocketSenderReceiverBase : IDisposable
     {
-        protected readonly Socket _socket;
-        protected readonly SocketAwaitableEventArgs _awaitableEventArgs;
+        protected readonly Socket socket;
+        protected readonly SocketAwaitableEventArgs awaitableEventArgs;
 
         protected SocketSenderReceiverBase(Socket socket, PipeScheduler scheduler)
         {
-            _socket = socket;
-            _awaitableEventArgs = new SocketAwaitableEventArgs(scheduler);
+            this.socket = socket;
+            awaitableEventArgs = new SocketAwaitableEventArgs(scheduler);
         }
 
-        public void Dispose() => _awaitableEventArgs.Dispose();
+        public void Dispose() => awaitableEventArgs.Dispose();
     }
 }

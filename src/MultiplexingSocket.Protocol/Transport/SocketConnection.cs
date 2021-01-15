@@ -20,18 +20,18 @@ namespace MultiplexingSocket.Protocol.Transport
       private static readonly bool IsWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
       private static readonly bool IsMacOS = RuntimeInformation.IsOSPlatform(OSPlatform.OSX);
 
-      private readonly Socket _socket;
-      private readonly ISocketsTrace _trace;
-      private readonly SocketReceiver _receiver;
-      private readonly SocketSender _sender;
-      private readonly CancellationTokenSource _connectionClosedTokenSource = new CancellationTokenSource();
+      private readonly Socket socket;
+      private readonly ISocketsTrace trace;
+      private readonly SocketReceiver receiver;
+      private readonly SocketSender sender;
+      private readonly CancellationTokenSource connectionClosedTokenSource = new CancellationTokenSource();
 
-      private readonly object _shutdownLock = new object();
-      private volatile bool _socketDisposed;
-      private volatile Exception _shutdownReason;
-      private Task _processingTask;
-      private readonly TaskCompletionSource<object> _waitForConnectionClosedTcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
-      private bool _connectionClosed;
+      private readonly object shutdownLock = new object();
+      private volatile bool socketDisposed;
+      private volatile Exception shutdownReason;
+      private Task processingTask;
+      private readonly TaskCompletionSource<object> waitForConnectionClosedTcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
+      private bool connectionClosed;
 
       internal SocketConnection(Socket socket,
                                 MemoryPool<byte> memoryPool,
@@ -44,22 +44,22 @@ namespace MultiplexingSocket.Protocol.Transport
          Debug.Assert(memoryPool != null);
          Debug.Assert(trace != null);
 
-         _socket = socket;
-         MemoryPool = memoryPool;
-         _trace = trace;
+         this.socket = socket;
+         this.MemoryPool = memoryPool;
+         this.trace = trace;
 
-         LocalEndPoint = _socket.LocalEndPoint;
-         RemoteEndPoint = _socket.RemoteEndPoint;
+         this.LocalEndPoint = this.socket.LocalEndPoint;
+         this.RemoteEndPoint = this.socket.RemoteEndPoint;
 
-         ConnectionClosed = _connectionClosedTokenSource.Token;
+         this.ConnectionClosed = connectionClosedTokenSource.Token;
 
          // On *nix platforms, Sockets already dispatches to the ThreadPool.
          // Yes, the IOQueues are still used for the PipeSchedulers. This is intentional.
          // https://github.com/aspnet/KestrelHttpServer/issues/2573
          var awaiterScheduler = IsWindows ? scheduler : PipeScheduler.Inline;
 
-         _receiver = new SocketReceiver(_socket, awaiterScheduler);
-         _sender = new SocketSender(_socket, awaiterScheduler);
+         this.receiver = new SocketReceiver(this.socket, awaiterScheduler);
+         this.sender = new SocketSender(this.socket, awaiterScheduler);
 
          maxReadBufferSize ??= 0;
          maxWriteBufferSize ??= 0;
@@ -70,7 +70,7 @@ namespace MultiplexingSocket.Protocol.Transport
          var pair = DuplexPipe.CreateConnectionPair(inputOptions, outputOptions);
 
          // Set the transport and connection id
-         Transport = pair.Transport;
+         this.Transport = pair.Transport;
          this.Input = pair.Application.Output;
          this.Output = pair.Application.Input;
          this.ConnectionId = Guid.NewGuid().ToString();
@@ -92,7 +92,7 @@ namespace MultiplexingSocket.Protocol.Transport
 
       public void Start()
       {
-         _processingTask = StartAsync();
+         processingTask = StartAsync();
       }
 
       private async Task StartAsync()
@@ -107,12 +107,12 @@ namespace MultiplexingSocket.Protocol.Transport
             await receiveTask;
             await sendTask;
 
-            _receiver.Dispose();
-            _sender.Dispose();
+            receiver.Dispose();
+            sender.Dispose();
          }
          catch (Exception ex)
          {
-            _trace.LogError(0, ex, $"Unexpected exception in {nameof(SocketConnection)}.{nameof(StartAsync)}.");
+            trace.LogError(0, ex, $"Unexpected exception in {nameof(SocketConnection)}.{nameof(StartAsync)}.");
          }
       }
 
@@ -131,12 +131,12 @@ namespace MultiplexingSocket.Protocol.Transport
          Transport.Input.Complete();
          Transport.Output.Complete();
 
-         if (_processingTask != null)
+         if (processingTask != null)
          {
-            await _processingTask;
+            await processingTask;
          }
 
-         _connectionClosedTokenSource.Dispose();
+         connectionClosedTokenSource.Dispose();
       }
 
       private async Task DoReceive()
@@ -154,9 +154,9 @@ namespace MultiplexingSocket.Protocol.Transport
 
             // There's still a small chance that both DoReceive() and DoSend() can log the same connection reset.
             // Both logs will have the same ConnectionId. I don't think it's worthwhile to lock just to avoid this.
-            if (!_socketDisposed)
+            if (!socketDisposed)
             {
-               _trace.ConnectionReset(ConnectionId);
+               trace.ConnectionReset(ConnectionId);
             }
          }
          catch (Exception ex)
@@ -166,26 +166,26 @@ namespace MultiplexingSocket.Protocol.Transport
             // This exception should always be ignored because _shutdownReason should be set.
             error = ex;
 
-            if (!_socketDisposed)
+            if (!socketDisposed)
             {
                // This is unexpected if the socket hasn't been disposed yet.
-               _trace.ConnectionError(ConnectionId, error);
+               trace.ConnectionError(ConnectionId, error);
             }
          }
          catch (Exception ex)
          {
             // This is unexpected.
             error = ex;
-            _trace.ConnectionError(ConnectionId, error);
+            trace.ConnectionError(ConnectionId, error);
          }
          finally
          {
             // If Shutdown() has already bee called, assume that was the reason ProcessReceives() exited.
-            Input.Complete(_shutdownReason ?? error);
+            Input.Complete(shutdownReason ?? error);
 
             FireConnectionClosed();
 
-            await _waitForConnectionClosedTcs.Task;
+            await waitForConnectionClosedTcs.Task;
          }
       }
 
@@ -196,17 +196,17 @@ namespace MultiplexingSocket.Protocol.Transport
          while (true)
          {
             // Wait for data before allocating a buffer.
-            await _receiver.WaitForDataAsync();
+            await receiver.WaitForDataAsync();
 
             // Ensure we have some reasonable amount of buffer space
             var buffer = input.GetMemory(MinAllocBufferSize);
 
-            var bytesReceived = await _receiver.ReceiveAsync(buffer);
+            var bytesReceived = await receiver.ReceiveAsync(buffer);
 
             if (bytesReceived == 0)
             {
                // FIN
-               _trace.ConnectionReadFin(ConnectionId);
+               trace.ConnectionReadFin(ConnectionId);
                break;
             }
 
@@ -218,14 +218,14 @@ namespace MultiplexingSocket.Protocol.Transport
 
             if (paused)
             {
-               _trace.ConnectionPause(ConnectionId);
+               trace.ConnectionPause(ConnectionId);
             }
 
             var result = await flushTask;
 
             if (paused)
             {
-               _trace.ConnectionResume(ConnectionId);
+               trace.ConnectionResume(ConnectionId);
             }
 
             if (result.IsCompleted || result.IsCanceled)
@@ -248,7 +248,7 @@ namespace MultiplexingSocket.Protocol.Transport
          catch (SocketException ex) when (IsConnectionResetError(ex.SocketErrorCode))
          {
             shutdownReason = new ConnectionResetException(ex.Message, ex);
-            _trace.ConnectionReset(ConnectionId);
+            trace.ConnectionReset(ConnectionId);
          }
          catch (Exception ex)
              when ((ex is SocketException socketEx && IsConnectionAbortError(socketEx.SocketErrorCode)) ||
@@ -261,7 +261,7 @@ namespace MultiplexingSocket.Protocol.Transport
          {
             shutdownReason = ex;
             unexpectedError = ex;
-            _trace.ConnectionError(ConnectionId, unexpectedError);
+            trace.ConnectionError(ConnectionId, unexpectedError);
          }
          finally
          {
@@ -294,7 +294,7 @@ namespace MultiplexingSocket.Protocol.Transport
             var isCompleted = result.IsCompleted;
             if (!buffer.IsEmpty)
             {
-               await _sender.SendAsync(buffer);
+               await sender.SendAsync(buffer);
             }
 
             output.AdvanceTo(end);
@@ -309,18 +309,18 @@ namespace MultiplexingSocket.Protocol.Transport
       private void FireConnectionClosed()
       {
          // Guard against scheduling this multiple times
-         if (_connectionClosed)
+         if (connectionClosed)
          {
             return;
          }
 
-         _connectionClosed = true;
+         connectionClosed = true;
 
          ThreadPool.UnsafeQueueUserWorkItem(state =>
          {
             state.CancelConnectionClosedToken();
 
-            state._waitForConnectionClosedTcs.TrySetResult(null);
+            state.waitForConnectionClosedTcs.TrySetResult(null);
          },
          this,
          preferLocal: false);
@@ -328,9 +328,9 @@ namespace MultiplexingSocket.Protocol.Transport
 
       private void Shutdown(Exception shutdownReason)
       {
-         lock (_shutdownLock)
+         lock (shutdownLock)
          {
-            if (_socketDisposed)
+            if (socketDisposed)
             {
                return;
             }
@@ -338,26 +338,26 @@ namespace MultiplexingSocket.Protocol.Transport
             // Make sure to close the connection only after the _aborted flag is set.
             // Without this, the RequestsCanBeAbortedMidRead test will sometimes fail when
             // a BadHttpRequestException is thrown instead of a TaskCanceledException.
-            _socketDisposed = true;
+            socketDisposed = true;
 
             // shutdownReason should only be null if the output was completed gracefully, so no one should ever
             // ever observe the nondescript ConnectionAbortedException except for connection middleware attempting
             // to half close the connection which is currently unsupported.
-            _shutdownReason = shutdownReason ?? new ConnectionAbortedException("The Socket transport's send loop completed gracefully.");
+            this.shutdownReason = shutdownReason ?? new ConnectionAbortedException("The Socket transport's send loop completed gracefully.");
 
-            _trace.ConnectionWriteFin(ConnectionId, _shutdownReason.Message);
+            trace.ConnectionWriteFin(ConnectionId, this.shutdownReason.Message);
 
             try
             {
                // Try to gracefully close the socket even for aborts to match libuv behavior.
-               _socket.Shutdown(SocketShutdown.Both);
+               socket.Shutdown(SocketShutdown.Both);
             }
             catch
             {
                // Ignore any errors from Socket.Shutdown() since we're tearing down the connection anyway.
             }
 
-            _socket.Dispose();
+            socket.Dispose();
          }
       }
 
@@ -365,11 +365,11 @@ namespace MultiplexingSocket.Protocol.Transport
       {
          try
          {
-            _connectionClosedTokenSource.Cancel();
+            connectionClosedTokenSource.Cancel();
          }
          catch (Exception ex)
          {
-            _trace.LogError(0, ex, $"Unexpected exception in {nameof(SocketConnection)}.{nameof(CancelConnectionClosedToken)}.");
+            trace.LogError(0, ex, $"Unexpected exception in {nameof(SocketConnection)}.{nameof(CancelConnectionClosedToken)}.");
          }
       }
 

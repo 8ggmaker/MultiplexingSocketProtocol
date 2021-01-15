@@ -15,13 +15,13 @@ namespace MultiplexingSocket.Protocol.Transport
 {
     internal sealed class SocketConnectionListener : IConnectionListener
     {
-        private readonly MemoryPool<byte> _memoryPool;
-        private readonly int _numSchedulers;
-        private readonly PipeScheduler[] _schedulers;
-        private readonly ISocketsTrace _trace;
-        private Socket _listenSocket;
-        private int _schedulerIndex;
-        private readonly SocketTransportOptions _options;
+        private readonly MemoryPool<byte> memoryPool;
+        private readonly int numSchedulers;
+        private readonly PipeScheduler[] schedulers;
+        private readonly ISocketsTrace trace;
+        private Socket listenSocket;
+        private int schedulerIndex;
+        private readonly SocketTransportOptions options;
 
         public EndPoint EndPoint { get; private set; }
 
@@ -31,32 +31,32 @@ namespace MultiplexingSocket.Protocol.Transport
             ISocketsTrace trace)
         {
             EndPoint = endpoint;
-            _trace = trace;
-            _options = options;
-            _memoryPool = MemoryPool<byte>.Shared;
+            this.trace = trace;
+            this.options = options;
+            memoryPool = MemoryPool<byte>.Shared;
             var ioQueueCount = options.IOQueueCount;
 
             if (ioQueueCount > 0)
             {
-                _numSchedulers = ioQueueCount;
-                _schedulers = new IOQueue[_numSchedulers];
+                numSchedulers = ioQueueCount;
+                schedulers = new IOQueue[numSchedulers];
 
-                for (var i = 0; i < _numSchedulers; i++)
+                for (var i = 0; i < numSchedulers; i++)
                 {
-                    _schedulers[i] = new IOQueue();
+                    schedulers[i] = new IOQueue();
                 }
             }
             else
             {
                 var directScheduler = new PipeScheduler[] { PipeScheduler.ThreadPool };
-                _numSchedulers = directScheduler.Length;
-                _schedulers = directScheduler;
+                numSchedulers = directScheduler.Length;
+                schedulers = directScheduler;
             }
         }
 
         internal void Bind()
         {
-            if (_listenSocket != null)
+            if (this.listenSocket != null)
             {
                 throw new InvalidOperationException("TransportAlreadyBound");
             }
@@ -87,7 +87,7 @@ namespace MultiplexingSocket.Protocol.Transport
 
             listenSocket.Listen(512);
 
-            _listenSocket = listenSocket;
+            this.listenSocket = listenSocket;
         }
 
         public async ValueTask<ConnectionContext> AcceptAsync(CancellationToken cancellationToken = default)
@@ -96,19 +96,19 @@ namespace MultiplexingSocket.Protocol.Transport
             {
                 try
                 {
-                    var acceptSocket = await _listenSocket.AcceptAsync();
+                    var acceptSocket = await listenSocket.AcceptAsync();
 
                     // Only apply no delay to Tcp based endpoints
                     if (acceptSocket.LocalEndPoint is IPEndPoint)
                     {
-                        acceptSocket.NoDelay = _options.NoDelay;
+                        acceptSocket.NoDelay = options.NoDelay;
                     }
 
-                    var connection = new SocketConnection(acceptSocket, _memoryPool, _schedulers[_schedulerIndex], _trace, _options.MaxReadBufferSize, _options.MaxWriteBufferSize);
+                    var connection = new SocketConnection(acceptSocket, memoryPool, schedulers[schedulerIndex], trace, options.MaxReadBufferSize, options.MaxWriteBufferSize);
 
                     connection.Start();
 
-                    _schedulerIndex = (_schedulerIndex + 1) % _numSchedulers;
+                    schedulerIndex = (schedulerIndex + 1) % numSchedulers;
 
                     return connection;
                 }
@@ -125,22 +125,22 @@ namespace MultiplexingSocket.Protocol.Transport
                 catch (SocketException)
                 {
                     // The connection got reset while it was in the backlog, so we try again.
-                    _trace.ConnectionReset(connectionId: "(null)");
+                    trace.ConnectionReset(connectionId: "(null)");
                 }
             }
         }
 
         public ValueTask UnbindAsync(CancellationToken cancellationToken = default)
         {
-            _listenSocket?.Dispose();
+            listenSocket?.Dispose();
             return default;
         }
 
         public ValueTask DisposeAsync()
         {
-            _listenSocket?.Dispose();
+            listenSocket?.Dispose();
             // Dispose the memory pool
-            _memoryPool.Dispose();
+            memoryPool.Dispose();
             return default;
         }
     }

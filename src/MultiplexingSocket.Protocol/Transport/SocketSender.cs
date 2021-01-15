@@ -26,37 +26,37 @@ namespace MultiplexingSocket.Protocol.Transport
                 return SendAsync(buffers.First);
             }
 
-            if (!_awaitableEventArgs.MemoryBuffer.Equals(Memory<byte>.Empty))
+            if (!awaitableEventArgs.MemoryBuffer.Equals(Memory<byte>.Empty))
             {
-                _awaitableEventArgs.SetBuffer(null, 0, 0);
+                awaitableEventArgs.SetBuffer(null, 0, 0);
             }
 
-            _awaitableEventArgs.BufferList = GetBufferList(buffers);
+            awaitableEventArgs.BufferList = GetBufferList(buffers);
 
-            if (!_socket.SendAsync(_awaitableEventArgs))
+            if (!socket.SendAsync(awaitableEventArgs))
             {
-                _awaitableEventArgs.Complete();
+                awaitableEventArgs.Complete();
             }
 
-            return _awaitableEventArgs;
+            return awaitableEventArgs;
         }
 
         private SocketAwaitableEventArgs SendAsync(ReadOnlyMemory<byte> memory)
         {
             // The BufferList getter is much less expensive then the setter.
-            if (_awaitableEventArgs.BufferList != null)
+            if (awaitableEventArgs.BufferList != null)
             {
-                _awaitableEventArgs.BufferList = null;
+                awaitableEventArgs.BufferList = null;
             }
 
-            _awaitableEventArgs.SetBuffer(MemoryMarshal.AsMemory(memory));
+            awaitableEventArgs.SetBuffer(MemoryMarshal.AsMemory(memory));
 
-            if (!_socket.SendAsync(_awaitableEventArgs))
+            if (!socket.SendAsync(awaitableEventArgs))
             {
-                _awaitableEventArgs.Complete();
+                awaitableEventArgs.Complete();
             }
 
-            return _awaitableEventArgs;
+            return awaitableEventArgs;
         }
 
         private List<ArraySegment<byte>> GetBufferList(in ReadOnlySequence<byte> buffer)

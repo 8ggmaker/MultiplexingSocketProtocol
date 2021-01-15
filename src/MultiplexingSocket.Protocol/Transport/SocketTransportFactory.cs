@@ -13,8 +13,8 @@ namespace MultiplexingSocket.Protocol.Transport
 {
     public sealed class SocketTransportFactory : IConnectionListenerFactory
     {
-        private readonly SocketTransportOptions _options;
-        private readonly SocketsTrace _trace;
+        private readonly SocketTransportOptions options;
+        private readonly SocketsTrace trace;
 
         public SocketTransportFactory(
             IOptions<SocketTransportOptions> options,
@@ -30,14 +30,14 @@ namespace MultiplexingSocket.Protocol.Transport
                 throw new ArgumentNullException(nameof(loggerFactory));
             }
 
-            _options = options.Value;
+            this.options = options.Value;
             var logger = loggerFactory.CreateLogger("Microsoft.AspNetCore.Server.Kestrel.Transport.Sockets");
-            _trace = new SocketsTrace(logger);
+            trace = new SocketsTrace(logger);
         }
 
         public ValueTask<IConnectionListener> BindAsync(EndPoint endpoint, CancellationToken cancellationToken = default)
         {
-            var transport = new SocketConnectionListener(endpoint, _options, _trace);
+            var transport = new SocketConnectionListener(endpoint, options, trace);
             transport.Bind();
             return new ValueTask<IConnectionListener>(transport);
         }

@@ -15,26 +15,26 @@ namespace MultiplexingSocket.Protocol.Transport
 
         public SocketAwaitableEventArgs WaitForDataAsync()
         {
-            _awaitableEventArgs.SetBuffer(Memory<byte>.Empty);
+            awaitableEventArgs.SetBuffer(Memory<byte>.Empty);
 
-            if (!_socket.ReceiveAsync(_awaitableEventArgs))
+            if (!socket.ReceiveAsync(awaitableEventArgs))
             {
-                _awaitableEventArgs.Complete();
+                awaitableEventArgs.Complete();
             }
 
-            return _awaitableEventArgs;
+            return awaitableEventArgs;
         }
 
         public SocketAwaitableEventArgs ReceiveAsync(Memory<byte> buffer)
         {
-            _awaitableEventArgs.SetBuffer(buffer);
+            awaitableEventArgs.SetBuffer(buffer);
 
-            if (!_socket.ReceiveAsync(_awaitableEventArgs))
+            if (!socket.ReceiveAsync(awaitableEventArgs))
             {
-                _awaitableEventArgs.Complete();
+                awaitableEventArgs.Complete();
             }
 
-            return _awaitableEventArgs;
+            return awaitableEventArgs;
         }
     }
 }
